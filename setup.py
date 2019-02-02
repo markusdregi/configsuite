@@ -27,7 +27,11 @@ setuptools.setup(
     use_scm_version={
         'write_to': 'configsuite/_version.py'
     },
-    install_requires=['enum34==1.1.6 ; python_version<"3.4"'],
+    install_requires=[
+        'enum34==1.1.6 ; python_version<"3.4"',
+        'subprocess',
+        'sphinx',
+    ],
     setup_requires=[
         'pytest-runner',
         'setuptools_scm',

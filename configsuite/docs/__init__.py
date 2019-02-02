@@ -50,19 +50,63 @@ def _init_docs(build_dir, project_name, author, release):
 
 def doc_builder(schema, level=0):
     indent = level*4*" "
+    element_sep = "\n\n"
+
+    docs = [
+        indent + schema.get(MK.Description, "<NO DESCRIPTION>"),
+    ]
+
+    elem_vals = schema.get(MK.ElementValidators, ())
+    if len(elem_vals) > 0:
+        try:
+            docs += [
+                indent + ":requirement: {}".format(
+                    ", ".join([elem_val.msg for elem_val in elem_vals])
+                )
+            ]
+        except AttributeError:
+            raise Exception(elem_vals[0].__name__)
+
     if schema[MK.Type] == types.NamedDict:
-        return "\n\n".join([
+        req_child_marker = lambda key: (
+            "*" if schema[MK.Content][key].get(MK.Required, True) else ""
+        )
+
+        docs += [
             "\n".join((
-                indent + "**{key}:**".format(key=key),
+                indent + "**{key}{req}:**".format(
+                    key=key,
+                    req=req_child_marker(key)
+                    ),
                 doc_builder(value, level=level+1)
             ))
             for key, value in schema[MK.Content].items()
-        ])
+        ]
+    elif schema[MK.Type] == types.List:
+        docs += [
+            "\n".join([
+                indent + "**<list_item>:**",
+                doc_builder(schema[MK.Content][MK.Item], level=level+2),
+            ])
+        ]
+    elif schema[MK.Type] == types.Dict:
+        docs += [
+            "\n".join([
+                indent + "**<key>:**",
+                doc_builder(schema[MK.Content][MK.Key], level=level+2),
+                indent + "**<value>:**",
+                doc_builder(schema[MK.Content][MK.Value], level=level+2),
+            ])
+        ]
+    elif isinstance(schema[MK.Type], types.BasicType):
+        docs += [
+            indent + ":type: {_type}".format(_type=schema[MK.Type].name)
+        ]
     else:
-        return (
-            indent +
-            ":type: {_type}".format(_type=schema[MK.Type].name)
-        )
+        err_msg = "Unexpected type ({}) in schema while generating documentation."
+        raise TypeError(err_msg.format(schema[MK.Type]))
+
+    return element_sep.join(docs)
 
 
 def _generate_main_page(main_page, project_name, schema):
@@ -99,6 +143,10 @@ def build_man(build_dir):
 
 
 if __name__ == '__main__':
+    @configsuite.validator_msg("Score should be non-negative")
+    def _non_negative_score(elem):
+        return elem > 0
+
     schema = {
         MK.Type: types.NamedDict,
         MK.Content: {
@@ -107,7 +155,7 @@ if __name__ == '__main__':
                 MK.Description: (
                     "This is a very long line "
                     "that at some point should be broken into multiple "
-                    "lines. Hoping that this would work..."
+                    "lines. Hoping that this would work."
                 ),
             },
             'pet': {
@@ -151,6 +199,7 @@ if __name__ == '__main__':
                 MK.Content: {
                     MK.Key: { MK.Type: types.String },
                     MK.Value: {
+                        MK.ElementValidators: (_non_negative_score,),
                         MK.Type: types.Number,
                     },
                 },

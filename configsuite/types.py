@@ -22,10 +22,10 @@ import collections
 import numbers
 
 
-class BooleanResult(object):
-    """BooleanResult is a wrapper around a bool that also has a .msg attribute.
+class booleanresult(object):
+    """booleanresult is a wrapper around a bool that also has a .msg attribute.
 
-    The message is an explanation of the boolean value.
+    the message is an explanation of the boolean value.
     """
 
     def __init__(self, value, msg, indata):
@@ -34,10 +34,10 @@ class BooleanResult(object):
         self._input = str(indata)
 
     def __nonzero__(self):
-        return self._value is True
+        return self._value is true
 
     def __bool__(self):
-        return self._value is True
+        return self._value is true
 
     def __and__(self, other):
         return bool(self) and bool(other)
@@ -47,39 +47,44 @@ class BooleanResult(object):
         msg_fmt = "{} is {} on input {}"
         return msg_fmt.format(self._msg, "true" if self else "false", self._input)
 
-    @property
-    def raw_msg(self):
-        return self._msg
-
     def __repr__(self):
-        fmt = "BooleanResult({}, {}, {})"
+        fmt = "booleanresult({}, {}, {})"
         return fmt.format(bool(self), self._msg, self._input)
 
 
 def validator_msg(msg):
-    """Validator decorator wraps return value in a message container.
+    """validator decorator wraps return value in a message container.
 
-    Usage:
+    usage:
 
         @validator_msg('assert len(x) <= 2')
         def validate_size(x):
             return len(x) <= 2
 
-    Now, if `validate_size` returns a falsy value `ret`, for instance if
+    now, if `validate_size` returns a falsy value `ret`, for instance if
     provided with range(4), we will have
         `ret.msg = 'assert len(x) <= 2 is false on input [0, 1, 2, 3]`.
 
-    On the other hand, if `validate_size` returns a true value `ret`, for
+    on the other hand, if `validate_size` returns a true value `ret`, for
     instance if provided with [0, 1], we will have
         `ret.msg = 'assert len(x) <= 2 is true on input [0, 1]`.
     """
 
     def real_decorator(function):
-        def wrapper(*args, **kwargs):
-            res = function(*args, **kwargs)
-            return BooleanResult(res, msg, str(*args))
+        class Wrapper(object):
+            def __init__(self, function, msg):
+                self._function = function
+                self._msg = msg
 
-        return wrapper
+            @property
+            def msg(self):
+                return self._msg
+
+            def __call__(self, *args, **kwargs):
+                res = self._function(*args, **kwargs)
+                return booleanresult(res, self._msg, str(*args) + str(**kwargs))
+
+        return Wrapper(function, msg)
 
     return real_decorator
 
