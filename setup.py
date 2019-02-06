@@ -29,7 +29,7 @@ setuptools.setup(
     },
     install_requires=[
         'enum34==1.1.6 ; python_version<"3.4"',
-        'subprocess',
+        "subprocess32 ; python_version<'3.2'",
         'sphinx',
     ],
     setup_requires=[
