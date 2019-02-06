@@ -92,6 +92,11 @@ def validator_msg(msg):
 BasicType = collections.namedtuple("Type", ["name", "validate"])
 Collection = collections.namedtuple("Type", ["name", "validate"])
 
+_type_eq = lambda self, other: self.name == other.name
+_type_neq = lambda *args: not _type_eq(*args)
+Collection.__eq__ = _type_eq
+Collection.__neq__ = lambda *args: not _type_neq
+
 
 @validator_msg("Is x a dictionary")
 def _is_pydict(x):
