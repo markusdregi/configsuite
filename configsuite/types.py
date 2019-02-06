@@ -34,10 +34,10 @@ class booleanresult(object):
         self._input = str(indata)
 
     def __nonzero__(self):
-        return self._value is true
+        return self._value is True
 
     def __bool__(self):
-        return self._value is true
+        return self._value is True
 
     def __and__(self, other):
         return bool(self) and bool(other)
