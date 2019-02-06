@@ -1,3 +1,22 @@
+"""Copyright 2019 Equinor ASA and The Netherlands Organisation for
+Applied Scientific Research TNO.
+
+Licensed under the MIT license.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the conditions stated in the LICENSE file in the project root for
+details.
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+"""
+
+
 import configsuite
 import subprocess
 import os
@@ -48,12 +67,12 @@ def _init_docs(build_dir, project_name, author, release):
     )
 
 
-def doc_builder(schema, level=0):
+def generate(schema, level=0):
     indent = level*4*" "
     element_sep = "\n\n"
 
     docs = [
-        indent + schema.get(MK.Description, "<NO DESCRIPTION>"),
+        indent + schema.get(MK.Description, ""),
     ]
 
     elem_vals = schema.get(MK.ElementValidators, ())
@@ -78,7 +97,7 @@ def doc_builder(schema, level=0):
                     key=key,
                     req=req_child_marker(key)
                     ),
-                doc_builder(value, level=level+1)
+                generate(value, level=level+1)
             ))
             for key, value in schema[MK.Content].items()
         ]
@@ -86,16 +105,16 @@ def doc_builder(schema, level=0):
         docs += [
             "\n".join([
                 indent + "**<list_item>:**",
-                doc_builder(schema[MK.Content][MK.Item], level=level+2),
+                generate(schema[MK.Content][MK.Item], level=level+2),
             ])
         ]
     elif schema[MK.Type] == types.Dict:
         docs += [
             "\n".join([
                 indent + "**<key>:**",
-                doc_builder(schema[MK.Content][MK.Key], level=level+2),
+                generate(schema[MK.Content][MK.Key], level=level+2),
                 indent + "**<value>:**",
-                doc_builder(schema[MK.Content][MK.Value], level=level+2),
+                generate(schema[MK.Content][MK.Value], level=level+2),
             ])
         ]
     elif isinstance(schema[MK.Type], types.BasicType):
@@ -110,7 +129,7 @@ def doc_builder(schema, level=0):
 
 
 def _generate_main_page(main_page, project_name, schema):
-    doc_body = doc_builder(schema)
+    doc_body = generate(schema)
     with open(main_page, 'w') as f:
         f.write(_MAIN_TEMPLATE.format(
             project_name=project_name,
@@ -149,46 +168,56 @@ if __name__ == '__main__':
 
     schema = {
         MK.Type: types.NamedDict,
+        MK.Description: (
+            "The PetMeet configuration is to give an overview of you and your "
+            "pet to better be able to find a matching pet owner."
+        ),
         MK.Content: {
             'name': {
                 MK.Type: types.String,
-                MK.Description: (
-                    "This is a very long line "
-                    "that at some point should be broken into multiple "
-                    "lines. Hoping that this would work."
-                ),
+                MK.Description: "Your full name.",
             },
             'pet': {
                 MK.Type: types.NamedDict,
+                MK.Description: "Information about your pet.",
                 MK.Content: {
                     'name': {
                         MK.Type: types.String,
+                        MK.Description: "Name of the pet.",
                     },
                     'favourite_food': {
                         MK.Type: types.String,
+                        MK.Description: "Favourite food of the pet.",
                     },
                     'weight': {
                         MK.Type: types.Number,
+                        MK.Description: "Weight of pet in tons.",
                     },
                     'nkids': {
                         MK.Type: types.Integer,
+                        MK.Description: "Number of kids.",
                     },
                     'likeable': {
                         MK.Type: types.Bool,
+                        MK.Description: "Is the pet likeable?",
                     },
                 },
             },
             'playgrounds': {
                 MK.Type: types.List,
+                MK.Description: "List of all playgrounds you take your pet to.",
                 MK.Content: {
                     MK.Item: {
                         MK.Type: types.NamedDict,
+                        MK.Description: "Information about a playground.",
                         MK.Content: {
                             'name': {
                                 MK.Type: types.String,
+                                MK.Description: "Name of the playground.",
                             },
                             'score': {
                                 MK.Type: types.Integer,
+                                MK.Description: "Your score for the playground.",
                             },
                         },
                     },
@@ -196,11 +225,18 @@ if __name__ == '__main__':
             },
             'veterinary_scores': {
                 MK.Type: types.Dict,
+                MK.Description: (
+                    "List of all veterinaries you have taken your pet to. "
+                ),
                 MK.Content: {
-                    MK.Key: { MK.Type: types.String },
+                    MK.Key: {
+                        MK.Type: types.String,
+                        MK.Description: "Name of the veterinary.",
+                    },
                     MK.Value: {
                         MK.ElementValidators: (_non_negative_score,),
                         MK.Type: types.Number,
+                        MK.Description: "Your score of the vet.",
                     },
                 },
             },
@@ -209,11 +245,11 @@ if __name__ == '__main__':
 
     build_dir = os.path.realpath('docs')
     make_docs(
-            build_dir,
-            'configsuite',
-            'Software Innovation Bergen, Equinor & TNO',
-            configsuite.__version__,
-            schema,
-            )
+        build_dir,
+        'configsuite',
+        'Software Innovation Bergen, Equinor & TNO',
+        configsuite.__version__,
+        schema,
+    )
     build_html(build_dir)
     build_man(build_dir)

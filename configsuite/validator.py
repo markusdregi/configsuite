@@ -50,8 +50,8 @@ class Validator(object):
         elif data_type == configsuite.types.Dict:
             valid &= self._validate_dict(config, schema[MK.Content])
         else:
-            msg = "Unknown type {} while validating"
-            raise TypeError(msg.format(data_type))
+            msg = "Unknown type {} while validating ({})"
+            raise TypeError(msg.format(data_type, configsuite.types.NamedDict))
 
         if valid:
             valid &= self._element_validation(config, schema)
