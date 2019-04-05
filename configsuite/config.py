@@ -48,7 +48,7 @@ class ConfigSuite(object):
     @property
     def errors(self):
         if len(self._layers) == 1 and self.readable:
-            return tuple(filter(lambda err: err.layer is None, self._errors))
+            return tuple([err for err in self._errors if err.layer is None])
 
         return self._errors
 
@@ -151,9 +151,7 @@ class ConfigSuite(object):
             )
         elif data_type == configsuite.types.List:
             item_schema = schema[MK.Content][MK.Item]
-            return tuple(
-                map(lambda elem: self._build_snapshot(elem, item_schema), config)
-            )
+            return tuple([self._build_snapshot(elem, item_schema) for elem in config])
         elif data_type == configsuite.types.Dict:
             key_schema = schema[MK.Content][MK.Key]
             value_schema = schema[MK.Content][MK.Value]
