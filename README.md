@@ -13,6 +13,8 @@ _Config Suite_ is the result of recognizing the complexity of software configura
 - Output a single immutable configuration object where all values are provided.
 - Support for multiple data sources, yielding the possibility of default values as well as user and workspace configurations on top of the current configuration.
 - Generating documentation that adheres to the technical requirements.
+- No exceptions are thrown based on user-input (this is currently not true for
+  validatiors).
 
 ## Future ##
 Have a look at the epics and issues in the _GitHub_ (repository)[https://github.com/equinor/configsuite/issues].
@@ -393,6 +395,68 @@ Note that all valid suites also are readable. And that all unreadable suites
 also are invalid.
 
 #### Required values ####
+So far all entries in your configuration file have been mandatory to fill in.
+And if some key in a Named dict would be missing a `MissingKeyError` would be
+registered. However, this is not always the wanted behaviour. By using the
+`MetaKeys.Required` option you can control whether a key is indeed required.
+You could change the `cars` schema above such that `credit` would be optional
+as follows:
+
+```python
+from configsuite import types
+from configsuite import MetaKeys as MK
+
+schema = {
+    MK.Type: types.NamedDict,
+    MK.Content: {
+        "owner": {
+            MK.type: types.NamedDict,
+            MK.Content: {
+                "name": {MK.Type: types.String},
+                "credit": {
+                    MK.Type: types.Integer,
+                    MK.Required: False,
+                },
+                "insured": {MK.Type: types.Bool},
+            },
+        },
+        "cars": {
+            MK.Type: types.List,
+            MK.Content: {
+                MK.Item: {
+                    MK.Type: types.NamedDict,
+                    MK.Content: {
+                        "brand": {MK.Type: types.String},
+                        "first_registered": {MK.Type: types.Date}
+                    },
+                },
+            },
+        },
+    },
+}
+```
+
+And then if no `credit` was specified a `MissingKeyError` would not be
+registered. However, recall the principle of configuration readiness. Since,
+the programmer should not have to special case whether or not the value is
+present in the `snapshot`. The `snapshot` is always built based on the schema
+and hence `suite.snapshot.owner.credit` would indeed be an attribute
+independently of whether the user has configured it. In this scenario the value
+of `suite.snapshot.owner.credit` would be `None`. To configure the default
+value to something else then `None`, we refer the reader to the next section.
+
+#### Default values ####
+We have planned two ways of providing default values in Config Suite. You are
+to either specify it in the schema via the keyword `MetaKeys.Default` (NOTE:
+This is yet to be implemented!). This has the advantage of being able to provide default
+values inside list-elements. The disadvantage is that you would need to edit
+the code to change the default values and hence site or project specific
+defaults are not suited for this purpose. The second, and currently only
+implemented, way of specifying default are via `layers`.
+
+Note that no element should be both required and have a given `Default` value.
+
+#### Layers ####
 TODO
 
 #### Validators ####
@@ -400,9 +464,6 @@ TODO
 TODO
 
 ##### Context validators #####
-TODO
-
-#### Layers ####
 TODO
 
 #### Creating your own types ####
