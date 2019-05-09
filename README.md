@@ -457,20 +457,106 @@ implemented, way of specifying default are via `layers`.
 Note that no element should be both required and have a given `Default` value.
 
 #### Layers ####
-TODO
+Layers is a fundamental concept in Config Suite that enables you to retrieve
+configurations from multiple sources in a consistent manner. It can be utilized
+to give priority to different sources, being application defaults, installation
+defaults, project or user settings, as well as case specific configuration. It
+can also be utilized to reprent changes in configuration from a UI in a
+consistent manner.
+
+In short, a layer is, a possibly incomplete, configuration source. Multiple
+layers can be stacked on top of each other to form a single configuration. In
+such a stack, top layers take precedence over lower layers. For each of the
+types there are specific rules for how that type is merged when multiple layers
+are combined into a single value.
+
+##### Basic types #####
+Basic types are simply overwritten and only the value from the top most layer
+specifying that value is kept.
+
+##### Named dicts and dicts ####
+Named dicts and dicts are by default joined in an update kind of fashion. All
+the values are joined recursively, key by key. This implies that for the
+`cars`-example with the following layers:
+
+```yml
+# Lower level
+owner:
+  name: Donald Duck
+  credit: 100
+```
+
+```yml
+# Upper level
+owner:
+  name: Scrooge McDuck
+  insured: True
+```
+
+would result in the following after being merged:
+
+```yml
+# Merged configuration
+owner:
+  name: Scrooge McDuck
+  credit: 100
+  insured: True
+```
+
+##### Lists #####
+Lists are by default appended, with the top layer elements appearing after
+lower levels. If we again lock at the `cars`-example:
+
+```yml
+# Lower level
+cars:
+  -
+    brand: Belchfire Runabout
+    first_registered: 1938-7-1
+  -
+    brand: Duckworth
+    first_registered: 1987-9-18
+```
+
+```yml
+# Upper level
+cars:
+  -
+    brand: Troll
+    first_registered: 1956-11-6
+```
+
+would result in the following after being merged:
+
+```yml
+# Merged configuration
+cars:
+  -
+    brand: Belchfire Runabout
+    first_registered: 1938-7-1
+  -
+    brand: Duckworth
+    first_registered: 1987-9-18
+  -
+    brand: Troll
+    first_registered: 1956-11-6
+```
 
 #### Validators ####
-##### Element validators #####
-TODO
-
-##### Context validators #####
 TODO
 
 #### Creating your own types ####
 TODO
 
 #### Transformations ####
-##### Transformations #####
+TODO
+
+#### Documentation generation ####
+TODO
+
+#### Advanced topics ####
+
+##### Context validators #####
 TODO
 
 ##### Context transformations #####
@@ -479,5 +565,8 @@ TODO
 ##### Layer transformations #####
 TODO
 
-#### Documentation generation ####
-TODO
+##### Layer mergning operators #####
+This is yet to be implemented.
+
+#### Additional examples ####
+TODO: Build from test data
