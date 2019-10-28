@@ -10,35 +10,59 @@ specify ones name and hobby, i.e:
 
 .. code-block:: yaml
 
-    name: espen askeladd
-    hobby: collecting stuff
+    name: Espen Askeladd
+    hobby: collect stuff
 
 You can then instantiate a suite as follows:
 
-.. code-block:: python
+.. testsetup:: [getting_started]
+    
+    from configsuite import types
+    from configsuite import MetaKeys as MK
+
+    schema = {
+        MK.Type: types.NamedDict,
+        MK.Content: {
+            "name": {MK.Type: types.String},
+            "hobby": {MK.Type: types.String},
+        }
+    }
+
+    import yaml
+
+    input_config = yaml.safe_load("""
+    name: Espen Askeladd
+    hobby: collect stuff
+    """)
+
+.. testcode:: [getting_started]
+
+    # ... configuration is loaded into 'input_config' ...
 
     import configsuite
-
-    with open('config.yml') as f:
-        input_config = yaml.load(f)
-
+    
     suite = configsuite.ConfigSuite(input_config, schema)
 
 You can now check whether data provided in ``input_config`` is valid by accessing
 ``suite.valid``.
 
-.. code-block:: python
+.. testcode:: [getting_started]
 
     if suite.valid:
         print("Congratulations! The config is valid.")
     else:
         print("Sorry, the configuration is invalid.")
 
+.. testoutput:: [getting_started]
+    :hide:
+
+    Congratulations! The config is valid.
+
 Now, given that the configuration is indeed valid you would probably like to
 access the data. This can be done via the ``ConfigSuite`` member named
 ``snapshot``. Hence, we could change our example above to:
 
-.. code-block:: python
+.. testcode:: [getting_started]
 
     if suite.valid:
         msg = "Congratulations {name}! The config is valid. Go {hobby}."
@@ -50,24 +74,32 @@ access the data. This can be done via the ``ConfigSuite`` member named
     else:
         print("Sorry, the configuration is invalid.")
 
-And if feed the example configuration above the output would be::
+And if feed the example configuration above the output would be
 
-    Congratulations Espen Askelad! The config is valid. Go collect stuff.
+.. testoutput:: [getting_started]
+
+    Congratulations Espen Askeladd! The config is valid. Go collect stuff.
 
 However, if we changed the value of ``name`` to ``13`` (or even worse ``["My", "name", "is kind", "of odd"]``) we would expect the configuration to be invalid and hence that the output would be ``Sorry, the configuration is invalid``. And as useful as this is it would be even better to gain more detailed information about the errors.
 
-.. code-block:: python
+.. testsetup:: [getting_started]
 
-    print(suite.errors)
-    (
-        InvalidTypeError(
-            msg=Is x a string is false on input 13,
-            key_path=('hobby',),
-            layer=None,
-        ),
-    )
+    import configsuite
+    import yaml
 
-.. code-block:: python
+    invalid_input_config = yaml.safe_load("""
+    name: Espen Askeladd
+    hobby: 13 
+    """)
+
+    invalid_suite = configsuite.ConfigSuite(invalid_input_config, schema)
+
+.. doctest:: [getting_started] 
+
+    >>> print(invalid_suite.errors)
+    (InvalidTypeError(msg=Is x a string is false on input '13', key_path=('hobby',), layer=None),)
+
+.. testcode:: [getting_started]
 
     if suite.valid:
         msg = "Congratulations {name}! The config is valid. Go {hobby}."
@@ -81,6 +113,11 @@ However, if we changed the value of ``name`` to ``13`` (or even worse ``["My", "
         print("Sorry, the configuration is invalid.")
         print(suite.errors)
 
+.. testoutput:: [getting_started]
+
+    Congratulations Espen Askeladd! The config is valid. Go collect stuff.
+
+
 A first schema
 ~~~~~~~~~~~~~~
 
@@ -88,10 +125,10 @@ The below schema is indeed the one used in our example above. It consists of a
 single collection containing the two keys ``name`` and ``hobby``, both of which
 value should be a string.
 
-from configsuite import types
-from configsuite import MetaKeys as MK
+.. testcode:: [first_schema]
 
-.. code-block:: python
+    from configsuite import types
+    from configsuite import MetaKeys as MK
 
     schema = {
         MK.Type: types.NamedDict,
@@ -163,7 +200,7 @@ This allows us to represent them as attributes of the snapshot (or an sub
 element of the snapshot). In general, if you know the values of all of the keys
 up front, then a named dict is the right container for you.
 
-.. code-block:: python
+.. testcode:: [nameddict]
 
     from configsuite import types
     from configsuite import MetaKeys as MK
@@ -172,17 +209,17 @@ up front, then a named dict is the right container for you.
         MK.Type: types.NamedDict,
         MK.Content: {
             "owner": {
-                MK.type: types.NamedDict,
+                MK.Type: types.NamedDict,
                 MK.Content: {
-                    "name": {MK.type: types.String},
-                    "credit": {MK.type: types.Number},
-                    "insured": {MK.type: types.Bool},
+                    "name": {MK.Type: types.String},
+                    "credit": {MK.Type: types.Number},
+                    "insured": {MK.Type: types.Bool},
                 },
             },
             "car": {
                 MK.Type: types.NamedDict,
                 MK.Content: {
-                    "brand": {MK.type: types.String},
+                    "brand": {MK.Type: types.String},
                     "first_registered": {MK.Type: types.Date}
                 },
             },
@@ -208,9 +245,26 @@ like this:
 
 and now, we could validate and access the data as follows:
 
-.. code-block:: python
+.. testsetup:: [nameddict]
+
+    import yaml
+    input_config = yaml.safe_load("""
+    owner:
+      name: Donald Duck
+      credit: -1000
+      insured: true
+
+    car:
+      brand: Belchfire Runabout
+      first_registered: 1938-07-01
+    """)
+
+
+.. testcode:: [nameddict]
 
     # ... configuration is loaded into 'input_config' ...
+
+    import configsuite
 
     suite = configsuite.ConfigSuite(input_config, schema)
 
@@ -221,6 +275,11 @@ and now, we could validate and access the data as follows:
         print("car was first registered {}".format(
             suite.snapshot.car.first_registered
         ))
+
+.. testoutput:: [nameddict]
+
+    name of owner is Donald Duck
+    car was first registered 1938-07-01
 
 Notice that since keys in a named dict are made attributes in the snapshot,
 they all have to be valid Python variable names.
@@ -234,14 +293,14 @@ to be of the same type. This makes for an easier format for the user as well as
 the programmer when one is dealing with configurations. A very simple example
 representing a list of integers would be as follows:
 
-.. code-block:: python
+.. testcode:: [list]
 
     import configsuite
     from configsuite import types
     from configsuite import MetaKeys as MK
 
     schema = {
-        MK.Types: types.List,
+        MK.Type: types.List,
         MK.Content: {
             MK.Item: {
                 MK.Type: types.Integer,
@@ -257,12 +316,25 @@ representing a list of integers would be as follows:
         for idx, value in enumerate(suite.snapshot):
             print("config[{}] is {}".format(idx, value))
 
+.. testoutput:: [list]
+
+    config[0] is 1
+    config[1] is 1
+    config[2] is 2
+    config[3] is 3
+    config[4] is 5
+    config[5] is 7
+    config[6] is 13
+
 A more complex example can be made by considering our example from the
 ``NamedDict`` section and imagining that an ``owner`` could have multiple ``cars``
 that was to be contained in a list.
 
-.. code-block:: python
+.. testcode:: [list_complex]
 
+    import datetime
+
+    import configsuite
     from configsuite import types
     from configsuite import MetaKeys as MK
 
@@ -270,11 +342,11 @@ that was to be contained in a list.
         MK.Type: types.NamedDict,
         MK.Content: {
             "owner": {
-                MK.type: types.NamedDict,
+                MK.Type: types.NamedDict,
                 MK.Content: {
-                    "name": {MK.type: types.String},
-                    "credit": {MK.type: types.Float},
-                    "insured": {MK.type: types.Bool},
+                    "name": {MK.Type: types.String},
+                    "credit": {MK.Type: types.Number},
+                    "insured": {MK.Type: types.Bool},
                 },
             },
             "cars": {
@@ -283,7 +355,7 @@ that was to be contained in a list.
                     MK.Item: {
                         MK.Type: types.NamedDict,
                         MK.Content: {
-                            "brand": {MK.type: types.String},
+                            "brand": {MK.Type: types.String},
                             "first_registered": {MK.Type: types.Date}
                         },
                     },
@@ -294,18 +366,18 @@ that was to be contained in a list.
 
     config = {
         "owner": {
-          "name": Donald Duck,
+          "name": "Donald Duck",
           "credit": -1000,
           "insured": True,
         },
         "cars": [
             {
               "brand": "Belchfire Runabout",
-              "first_registered": datetime.Date(1938, 7, 1),
+              "first_registered": datetime.date(1938, 7, 1),
             },
             {
               "brand": "Duckworth",
-              "first_registered": datetime.Date(1987, 9, 18),
+              "first_registered": datetime.date(1987, 9, 18),
             },
         ]
     }
@@ -316,6 +388,12 @@ that was to be contained in a list.
         print("name of owner is {}".format(suite.snapshot.owner.name))
         for car in suite.snapshot.cars:
             print("- {}".format(car.brand))
+
+.. testoutput:: [list_complex]
+
+    name of owner is Donald Duck
+    - Belchfire Runabout
+    - Duckworth
 
 Notice that ``suite.snapshot.cars`` is returned as a ``tuple``-like structure. It
 is iterable, indexable (``suite.snapshot.cars[0]``) and immutable.
@@ -330,7 +408,7 @@ rationale for this is similar to that one of the list. Uniform types for
 arbitrary sized configurations are easier and better, both for the user and the
 programmer. A simple example mapping animals to frequencies are displayed below.
 
-.. code-block:: python
+.. testcode:: [dict]
 
     import configsuite
     from configsuite import types
@@ -351,10 +429,16 @@ programmer. A simple example mapping animals to frequencies are displayed below.
     }
 
     suite = configsuite.ConfigSuite(config, schema)
-    assert suite.valid:
+    assert suite.valid
 
     for animal, frequency in suite.snapshot:
         print("{} was observed {} times".format(animal, frequency))
+
+.. testoutput:: [dict]
+
+    monkey was observed 13 times
+    donkey was observed 16 times
+    horse was observed 28 times
 
 As you can see, the elements of a ``Dict`` is accessible in ``(key, value)`` pairs
 in the same manner ``dict.items`` would provide for a Python dictionary. The
@@ -384,7 +468,6 @@ following configuration:
 
 .. code-block:: yaml
 
-
     owner:
       name: Donald Duck
       credit: -1000
@@ -393,6 +476,31 @@ following configuration:
     car:
       - my first car
       - my second car
+
+.. testcode:: [nameddict]
+    :hide:
+    
+    unreadable_input = yaml.safe_load("""
+    owner:
+      name: Donald Duck
+      credit: -1000
+      insured: true
+
+    car:
+      - my first car
+      - my second car
+    """)
+
+    unreadable_suite = configsuite.ConfigSuite(unreadable_input, schema)
+    assert not unreadable_suite.readable
+
+    try:
+        unreadable_suite.snapshot.owner
+    except AssertionError as err:
+        pass
+    else:
+        raise Exception("Missing exception")
+
 
 The ``car`` data is completely off and there is no way one could provide a
 reasonable value for ``config.snapshor.car.brand``. In such scenarios the
